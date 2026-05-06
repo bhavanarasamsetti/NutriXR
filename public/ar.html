@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NutriXR AR Viewer</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js",
+          "three/examples/jsm/webxr/ARButton.js": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/webxr/ARButton.js",
+          "three/examples/jsm/loaders/GLTFLoader.js": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/loaders/GLTFLoader.js",
+          "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/OrbitControls.js"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 30% 20%, #0f172a, #0b1220 40%, #070c17 80%);
+        color: #e5e7eb;
+        display: flex;
+        flex-direction: column;
+      }
+      body.ar-active header,
+      body.ar-active .prompt-card,
+      body.ar-active #ar-button {
+        display: none;
+      }
+      header {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .back {
+        color: #e2e8f0;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+      main {
+        flex: 1;
+        padding: 18px 16px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .stage {
+        flex: 1;
+        min-height: 50vh;
+        position: relative;
+      }
+      .prompt-card {
+        background: rgba(15, 23, 42, 0.92);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 18px;
+        padding: 18px 18px 20px;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+        display: grid;
+        gap: 10px;
+      }
+      .prompt-title {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+      .prompt-sub {
+        color: #cbd5f5;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      #ar-button {
+        display: flex;
+        justify-content: center;
+      }
+      #ar-button button {
+        font-size: 16px;
+        padding: 12px 20px;
+        border-radius: 14px;
+        border: none;
+        background: linear-gradient(120deg, #38bdf8, #6366f1);
+        color: #0b1220;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      #exit-ar {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(15, 23, 42, 0.9);
+        color: #e5e7eb;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 30;
+        display: none;
+      }
+      body.ar-active #exit-ar {
+        display: inline-flex;
+      }
+      #fruit-name,
+      #model-path 
+      {
+        display: none !important;
+      }
+  
+    </style>
+  </head>
+  <body>
+    <header>
+      <!-- <div class="title">NutriXR AR Viewer</div> -->
+      <a class="back" href="/dashboard">← Back</a>
+    </header>
+    <main>
+      <!-- <div class="status" id="status">Loading AR scene...</div> -->
+      <div class="prompt-card">
+        <div class="prompt-title">Ready to enter AR mode?</div>
+        <div class="prompt-sub">
+          We'll open your camera so you can place the fruit in your space. Make sure you allow camera access.
+        </div>
+      </div>
+      <div id="ar-button"></div>
+        <div><span id="fruit-name"></span></div>
+        <div><span id="model-path"></span></div>
+      <div class="stage" id="stage">
+        <!-- <div class="tip">Move your phone to find a flat surface. Tap to place the fruit with all nutrient nodes.</div> -->
+        
+       
+      </div>
+    </main>
+    <button id="exit-ar" type="button">Stop AR</button>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
+      import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+      import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+      const statusEl = document.getElementById("status");
+      const noteEl = document.getElementById("note");
+      const fruitNameEl = document.getElementById("fruit-name");
+      const modelPathEl = document.getElementById("model-path");
+      const stageEl = document.getElementById("stage");
+      const arButtonSlot = document.getElementById("ar-button");
+      const exitButton = document.getElementById("exit-ar");
+
+      const setStatus = (text) => {
+        if (statusEl) statusEl.textContent = text;
+      };
+      const setNote = (text) => {
+        if (noteEl) noteEl.textContent = text || "";
+      };
+
+      const basePath = new URL(".", window.location.href).pathname.replace(/\/$/, "");
+
+      function getModelPath() {
+        const params = new URLSearchParams(window.location.search);
+        const m = params.get("model");
+        if (m && m.toLowerCase().endsWith(".glb")) {
+          const sanitized = m.replace(/^\//, "");
+          if (sanitized.startsWith("models/")) return `${basePath}/${sanitized}`;
+          return `${basePath}/models/${sanitized}`;
+        }
+        return `${basePath}/models/Apple.glb`;
+      }
+
+      function getPayload() {
+        try {
+          let raw = sessionStorage.getItem("nutrixr-ar-payload");
+          if (!raw) {
+            raw = localStorage.getItem("nutrixr-ar-payload");
+            if (raw) {
+              try {
+                sessionStorage.setItem("nutrixr-ar-payload", raw);
+              } catch (err) {
+                console.warn("Failed to sync AR payload to sessionStorage", err);
+              }
+            }
+          }
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch (err) {
+          console.warn("Failed to parse AR payload", err);
+          return null;
+        }
+      }
+
+      const payload = getPayload();
+      const nutrients = Array.isArray(payload?.nutrients) ? payload.nutrients : [];
+      const fruitMeta = payload?.fruit || null;
+      const slicePct =
+        typeof payload?.slicePercentage === "number" ? Math.round(payload.slicePercentage) : null;
+      const modelPath = getModelPath();
+      const modelURL = modelPath.startsWith("http") ? modelPath : `${window.location.origin}${modelPath}`;
+      fruitNameEl.textContent = fruitMeta?.name || "Fruit";
+      modelPathEl.textContent = modelPath;
+      let note = "";
+      if (!nutrients.length) {
+        note = "No nutrient data passed from the main app. Showing the fruit only.";
+      }
+      if (slicePct !== null) {
+        note = note ? `${note} Portion: ${slicePct}%.` : `Portion: ${slicePct}%.`;
+      }
+      if (note) setNote(note);
+
+      const ua = navigator.userAgent || "";
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+      // Hide preview on mobile; allow preview on desktop.
+      const shouldShowPreview = () => false;
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(stageEl.clientWidth, stageEl.clientHeight);
+      renderer.xr.enabled = true;
+      renderer.domElement.style.touchAction = "none";
+      renderer.domElement.classList.add("xr-canvas");
+      stageEl.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, stageEl.clientWidth / stageEl.clientHeight, 0.01, 20);
+      camera.position.set(0, 1.4, 3.5);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1, 0);
+      controls.enableDamping = true;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x4b5563, 0.9));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+      dirLight.position.set(2, 4, 1.5);
+      scene.add(dirLight);
+
+      const reticleGeo = new THREE.RingGeometry(0.08, 0.12, 32);
+      reticleGeo.rotateX(-Math.PI / 2);
+      const reticleMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const reticle = new THREE.Mesh(reticleGeo, reticleMat);
+      reticle.matrixAutoUpdate = false;
+      reticle.visible = false;
+      scene.add(reticle);
+
+      const floaters = [];
+      const categoryInteractions = [];
+      const nutrientInteractions = [];
+      const clock = new THREE.Clock();
+
+      let contentGroup = null;
+      let placed = false;
+      let hitTestSource = null;
+      let hitTestSourceRequested = false;
+      let referenceSpace = null;
+      const activePointers = new Map();
+      let pinchBaseDistance = null;
+      let pinchStartScale = 1;
+
+      const controller = renderer.xr.getController(0);
+      controller.addEventListener("select", () => {
+        if (!contentGroup) return;
+        if (!renderer.xr.isPresenting) return;
+
+        // If not placed yet, place the graph.
+        if (!placed) {
+          if (reticle.visible) {
+            contentGroup.position.setFromMatrixPosition(reticle.matrix);
+          } else {
+            contentGroup.position.set(0, 0, -1);
+          }
+          if (!scene.children.includes(contentGroup)) scene.add(contentGroup);
+          placed = true;
+          reticle.visible = false;
+          setStatus("Placed. Walk around to explore the nutrient spheres.");
+          return;
+        }
+
+        // If already placed, treat select as a tap on categories/nutrients or reposition if reticle visible.
+        const origin = new THREE.Vector3();
+        const direction = new THREE.Vector3(0, 0, -1);
+        origin.setFromMatrixPosition(controller.matrixWorld);
+        direction.applyMatrix4(controller.matrixWorld).sub(origin).normalize();
+        raycaster.set(origin, direction);
+        if (!toggleCategoryByRaycaster(raycaster) && !toggleNutrientByRaycaster(raycaster)) {
+          if (reticle.visible) {
+            contentGroup.position.setFromMatrixPosition(reticle.matrix);
+          }
+        }
+      });
+      scene.add(controller);
+
+      const arButton = ARButton.createButton(renderer, {
+        requiredFeatures: ["hit-test", "dom-overlay"],
+        domOverlay: { root: document.body }
+      });
+      arButtonSlot.innerHTML = "";
+      arButtonSlot.appendChild(arButton);
+      if (arButton.textContent && arButton.textContent.toLowerCase().includes("not")) {
+        setStatus("AR is not supported in this browser/device.");
+      }
+
+      const markUnsupported = (reason = "AR not supported on this device/browser.") => {
+        setStatus(reason);
+        setNote("");
+        if (arButton) {
+          arButton.textContent = reason;
+          arButton.disabled = true;
+        }
+      };
+
+      async function ensureSupport() {
+        if (!navigator.xr) {
+          markUnsupported();
+          return false;
+        }
+        try {
+          const supported = await navigator.xr.isSessionSupported("immersive-ar");
+          if (!supported) {
+            markUnsupported();
+            return false;
+          }
+          return true;
+        } catch (err) {
+          console.warn("Support check failed", err);
+          return true; // let the user still try
+        }
+      }
+
+      const loader = new GLTFLoader();
+      loader.crossOrigin = "anonymous";
+      setStatus("Loading fruit model...");
+      loader.load(
+        modelURL,
+        (gltf) => {
+          contentGroup = buildContent(gltf.scene, fruitMeta, nutrients, categoryInteractions);
+          if (shouldShowPreview() && !renderer.xr.isPresenting && contentGroup) {
+            scene.add(contentGroup);
+          }
+          setStatus("Move your device to find a surface, then tap to place the graph in AR.");
+        },
+        undefined,
+        (err) => {
+          console.error("Model load error", err);
+          setStatus("Failed to load model. Check the path and try again.");
+          setNote(modelURL);
+        }
+      );
+      ensureSupport();
+
+      function polarPosition(index, count, radius, y, centerX = 0, centerZ = 0) {
+        const angle = (index / Math.max(count, 1)) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const z = centerZ + Math.sin(angle) * radius;
+        return [x, y, z];
+      }
+
+      const categoryColors = {
+        vitamins: "#2563eb",
+        minerals: "#db2777",
+        calories: "#d97706",
+        energy: "#7c3aed",
+        other: "#6b7280"
+      };
+      const softColor = new THREE.Color("#6b7280").lerp(new THREE.Color("#ffffff"), 0.35);
+
+      function categorize(nutrient) {
+        const name = (nutrient.name || "").toLowerCase();
+        if (name.includes("vitamin")) return "vitamins";
+        if (name.includes("potassium") || name.includes("iron") || name.includes("calcium") || name.includes("magnesium") || name.includes("zinc")) {
+          return "minerals";
+        }
+        if (name.includes("energy") || name.includes("calorie") || name.includes("protein") || name.includes("carb") || name.includes("sugar")) {
+          return "calories";
+        }
+        if (name.includes("fat")) return "energy";
+        if (name.includes("fiber") || name.includes("fibre")) return "energy";
+        return "other";
+      }
+
+      function buildCategories(list = []) {
+        const buckets = {
+          vitamins: [],
+          minerals: [],
+          calories: [],
+          energy: [],
+          other: []
+        };
+        list.forEach((n) => {
+          buckets[categorize(n)].push(n);
+        });
+        return Object.entries(buckets)
+          .filter(([, items]) => items.length > 0)
+          .map(([key, items]) => ({
+            id: key,
+            label: key.charAt(0).toUpperCase() + key.slice(1),
+            items
+          }));
+      }
+
+      function formatAmount(n) {
+        if (n == null) return "--";
+        const amount = n.amount;
+        if (typeof amount === "number") return `${amount.toFixed(2)} ${n.unit || ""}`.trim();
+        if (typeof amount === "string" && amount.trim() !== "") return `${amount} ${n.unit || ""}`.trim();
+        return "--";
+      }
+
+      function makeTextSprite(text, color = "#0f172a", fontSize = 64, bold = false, background = null) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const padding = 24;
+        const font = `${bold ? "700" : "600"} ${fontSize}px "Segoe UI", "Inter", sans-serif`;
+        ctx.font = font;
+        const metrics = ctx.measureText(text);
+        const width = metrics.width + padding * 2;
+        const height = fontSize + padding * 2;
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.font = font;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        if (background) {
+          ctx.fillStyle = background;
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.fillStyle = color;
+        ctx.fillText(text, width / 2, height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+        const scaleFactor = 0.005;
+        sprite.scale.set(width * scaleFactor, height * scaleFactor, 1);
+        return sprite;
+      }
+
+      function registerFloat(object, amplitude = 0.05, speed = 1, phase = 0, rotate = 0.12) {
+        floaters.push({
+          object,
+          baseY: object.position.y,
+          amplitude,
+          speed,
+          phase,
+          rotate
+        });
+      }
+
+      function updateFloaters(time) {
+        floaters.forEach((f) => {
+          const y = f.baseY + Math.sin(time * f.speed + f.phase) * f.amplitude;
+          f.object.position.y = y;
+          if (f.rotate) f.object.rotation.y = Math.sin(time * f.speed * 0.7 + f.phase) * f.rotate;
+        });
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      function toggleCategoryByRaycaster(activeRaycaster) {
+        const catMeshes = categoryInteractions.map((i) => i.mesh);
+        const catHits = activeRaycaster.intersectObjects(catMeshes, true);
+        if (catHits.length) {
+          const mesh = catHits[0].object;
+          const found = categoryInteractions.find((i) => i.mesh === mesh);
+          if (found) {
+            const nextExpanded = !found.expanded;
+            categoryInteractions.forEach((item) => {
+              item.expanded = false;
+              if (item.subGroup) item.subGroup.visible = false;
+              if (item.ring) item.ring.visible = false;
+            });
+            nutrientInteractions.forEach((n) => {
+              n.expanded = false;
+              if (n.detail) n.detail.visible = false;
+            });
+            if (found.subGroup) {
+              found.subGroup.visible = nextExpanded;
+            }
+            if (found.ring) {
+              found.ring.visible = nextExpanded;
+            }
+            found.expanded = nextExpanded;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function toggleNutrientByRaycaster(activeRaycaster) {
+        const nodes = nutrientInteractions.map((i) => i.mesh);
+        const hits = activeRaycaster.intersectObjects(nodes, true);
+        if (hits.length) {
+          const mesh = hits[0].object;
+          const found = nutrientInteractions.find((i) => i.mesh === mesh);
+          if (found) {
+            const next = !found.expanded;
+            nutrientInteractions.forEach((item) => {
+              item.expanded = false;
+              if (item.detail) item.detail.visible = false;
+            });
+            if (found.detail) {
+              found.detail.visible = next;
+            }
+            found.expanded = next;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function onPointerTap(event) {
+        if (renderer.xr.isPresenting) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        pointer.set(x, y);
+        raycaster.setFromCamera(pointer, camera);
+        if (!toggleCategoryByRaycaster(raycaster)) {
+          toggleNutrientByRaycaster(raycaster);
+        }
+      }
+
+      function computeLayout(root, scaleOverride) {
+        const box = new THREE.Box3().setFromObject(root);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const targetSize = 0.9;
+        const scale = scaleOverride || targetSize / maxDim;
+        return { size, center, scale };
+      }
+
+      function buildSubNodes(cat, catPosition, items, color, categoryInteractions, parentGroup) {
+        const subGroup = new THREE.Group();
+        subGroup.visible = false;
+        parentGroup.add(subGroup);
+
+        const subRadius = 0.95;
+        const subHeight = (catPosition?.[1] ?? 0) + 0.05;
+        const limit = Math.min(items.length || 0, 8);
+
+        // Ring indicator
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(subRadius - 0.08, subRadius + 0.02, 32),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.35,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(catPosition?.[0] ?? 0, subHeight - 0.02, catPosition?.[2] ?? 0);
+        ring.visible = false;
+        parentGroup.add(ring);
+
+        for (let idx = 0; idx < limit; idx++) {
+          const nutrient = items[idx];
+          if (!nutrient) continue;
+          const pos = polarPosition(idx, limit, subRadius, subHeight, catPosition?.[0], catPosition?.[2]);
+          const node = new THREE.Group();
+          node.position.set(pos[0], pos[1], pos[2]);
+          registerFloat(node, 0.04, 1.0, idx * 0.4);
+
+          // Hit target for nutrient toggle
+          const hitTarget = new THREE.Mesh(
+            new THREE.SphereGeometry(0.2, 12, 12),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false })
+          );
+          hitTarget.position.set(0, 0.1, 0);
+          node.add(hitTarget);
+
+          const sphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.16, 18, 18),
+            new THREE.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.55,
+              transparent: true,
+              opacity: 0.7,
+              depthTest: false,
+              depthWrite: false
+            })
+          );
+          node.add(sphere);
+
+          const name = makeTextSprite(nutrient.name || "Nutrient", "#e5e7eb", 38, true, null);
+          name.position.set(0, 0.24, 0);
+          node.add(name);
+
+          const amt = makeTextSprite(formatAmount(nutrient), "#e5e7eb", 34, false, null);
+          amt.position.set(0, 0.12, 0.14);
+          node.add(amt);
+
+          // Benefit node (small bubble) shown on tap
+          const detail = new THREE.Group();
+          detail.visible = false;
+          const benefitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.12, 16, 16),
+            new THREE.MeshStandardMaterial({
+              color: new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.35),
+              emissive: color,
+              emissiveIntensity: 0.45,
+              transparent: true,
+              opacity: 0.85,
+              depthTest: false,
+              depthWrite: false
+            })
+          );
+          benefitSphere.castShadow = true;
+          benefitSphere.receiveShadow = true;
+          benefitSphere.position.set(0, -0.24, 0);
+          detail.add(benefitSphere);
+
+          const detailText = makeTextSprite(
+            nutrient.benefit || nutrient.description || "Supports overall nutrition.",
+            "#0f172a",
+            38,
+            true,
+            "#eef2ff"
+          );
+          detailText.position.set(0, -0.24, 0.16);
+          detail.add(detailText);
+
+          detail.position.set(0, 0, 0);
+          node.add(detail);
+
+          subGroup.add(node);
+
+          nutrientInteractions.push({
+            mesh: hitTarget,
+            detail,
+            expanded: false
+          });
+        }
+
+        categoryInteractions?.push({
+          catId: cat.id,
+          mesh: cat.hitTarget,
+          subGroup,
+          ring,
+          expanded: false
+        });
+      }
+
+      function buildGraph(nutrientList, layout, categoryInteractions) {
+        const graph = new THREE.Group();
+        const categories = buildCategories(nutrientList);
+        if (!categories.length) return graph;
+
+        const centerX = layout?.center?.[0] ?? 0;
+        const centerZ = layout?.center?.[2] ?? 0;
+        const baseRadius = layout?.radius && layout.radius > 0 ? Math.max(layout.radius * 2.4, 1.1) : 2.6;
+        const categoryHeight = (layout?.center?.[1] ?? 0) + Math.max(layout?.height ? layout.height * 0.55 : 0.65, 0.55);
+
+        categories.forEach((cat, index) => {
+          const pos = polarPosition(index, categories.length, baseRadius, categoryHeight, centerX, centerZ);
+          const nodeGroup = new THREE.Group();
+          nodeGroup.position.set(pos[0], pos[1], pos[2]);
+          graph.add(nodeGroup);
+          registerFloat(nodeGroup, 0.06, 0.9, index * 0.7);
+
+          const color = categoryColors[cat.id] || "#6b7280";
+          const soft = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.18);
+
+          // Invisible hit target so taps on labels still toggle.
+          const hitTarget = new THREE.Mesh(
+            new THREE.SphereGeometry(0.28, 12, 12),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false })
+          );
+          hitTarget.position.set(0, 0.15, 0);
+          nodeGroup.add(hitTarget);
+          hitTarget.userData.isHitTarget = true;
+          cat.hitTarget = hitTarget;
+
+          const sphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 24, 24),
+            new THREE.MeshStandardMaterial({
+              color: soft,
+              emissive: soft,
+              emissiveIntensity: 0.55,
+              transparent: true,
+              opacity: 0.7,
+              depthTest: false,
+              depthWrite: false
+            })
+          );
+          sphere.castShadow = true;
+          sphere.receiveShadow = true;
+          nodeGroup.add(sphere);
+
+          const valSprite = makeTextSprite(
+            cat.items?.[0]?.amount ? formatAmount(cat.items[0]) : "--",
+            "#e5e7eb",
+            46,
+            false,
+            null
+          );
+          valSprite.position.set(0, 0.26, 0.18);
+          nodeGroup.add(valSprite);
+
+          const nameSprite = makeTextSprite(cat.label, "#e5e7eb", 52, true, null);
+          nameSprite.position.set(0, 0.4, 0);
+          nodeGroup.add(nameSprite);
+
+          buildSubNodes(cat, pos, cat.items || [], soft, categoryInteractions, nodeGroup);
+        });
+        return graph;
+      }
+
+      function buildContent(modelScene, fruit, nutrientList, categoryInteractions) {
+        const group = new THREE.Group();
+        const layout = computeLayout(modelScene, fruit?.scale);
+        const radius = Math.max(layout.size.x, layout.size.z) * layout.scale * 0.5 || 1.2;
+        const height = layout.size.y * layout.scale || 1.2;
+        const center = [0, 0, 0];
+
+        const clone = modelScene.clone(true);
+        clone.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) child.material.side = THREE.DoubleSide;
+          }
+        });
+        clone.scale.setScalar(layout.scale);
+        clone.position.set(-layout.center.x * layout.scale, -layout.center.y * layout.scale, -layout.center.z * layout.scale);
+        group.add(clone);
+
+        const graph = buildGraph(nutrientList, { radius, height, center }, categoryInteractions);
+        group.add(graph);
+
+        return group;
+      }
+
+      function onSessionEnd() {
+        hitTestSourceRequested = false;
+        hitTestSource = null;
+        referenceSpace = null;
+        placed = false;
+        reticle.visible = false;
+        document.body.classList.remove("ar-active");
+        if (contentGroup && scene.children.includes(contentGroup)) {
+          scene.remove(contentGroup);
+        }
+        if (!renderer.xr.isPresenting && contentGroup) {
+          scene.add(contentGroup);
+        }
+      }
+
+      renderer.xr.addEventListener("sessionstart", () => {
+        document.body.classList.add("ar-active");
+      });
+      renderer.xr.addEventListener("sessionend", onSessionEnd);
+      renderer.domElement.addEventListener("pointerdown", onPointerTap);
+      renderer.domElement.addEventListener("pointerdown", (event) => {
+        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (renderer.xr.isPresenting && !placed && reticle.visible && contentGroup) {
+          contentGroup.position.setFromMatrixPosition(reticle.matrix);
+          if (!scene.children.includes(contentGroup)) scene.add(contentGroup);
+          placed = true;
+          reticle.visible = false;
+          return;
+        }
+        if (activePointers.size === 1) {
+          isDragging = true;
+          lastX = event.clientX;
+          lastY = event.clientY;
+        } else if (activePointers.size === 2 && contentGroup) {
+          const pts = Array.from(activePointers.values());
+          pinchBaseDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          pinchStartScale = contentGroup.scale.x || 1;
+        }
+      });
+      renderer.domElement.addEventListener("pointerup", (event) => {
+        activePointers.delete(event.pointerId);
+        isDragging = false;
+        pinchBaseDistance = null;
+      });
+      renderer.domElement.addEventListener("pointercancel", (event) => {
+        activePointers.delete(event.pointerId);
+        isDragging = false;
+        pinchBaseDistance = null;
+      });
+      renderer.domElement.addEventListener("pointermove", (event) => {
+        if (!contentGroup || !placed) return;
+        if (activePointers.has(event.pointerId)) {
+          activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+        if (activePointers.size === 1 && isDragging) {
+          const dx = event.clientX - lastX;
+          const dy = event.clientY - lastY;
+          lastX = event.clientX;
+          lastY = event.clientY;
+          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          right.y = 0;
+          forward.y = 0;
+          right.normalize();
+          forward.normalize();
+          const moveScale = 0.0025;
+          if (renderer.xr.isPresenting) {
+            contentGroup.position.addScaledVector(right, dx * moveScale);
+            contentGroup.position.addScaledVector(forward, dy * moveScale);
+          } else {
+            contentGroup.rotation.y -= dx * 0.005;
+          }
+        } else if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          if (pinchBaseDistance && dist > 0) {
+            const factor = dist / pinchBaseDistance;
+            const nextScale = THREE.MathUtils.clamp(pinchStartScale * factor, 0.25, 3.5);
+            contentGroup.scale.setScalar(nextScale);
+          }
+        }
+      });
+
+      function onWindowResize() {
+        const width = stageEl.clientWidth;
+        const height = stageEl.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
+      window.addEventListener("resize", onWindowResize);
+
+      renderer.setAnimationLoop((timestamp, frame) => {
+        const time = clock.getElapsedTime();
+        updateFloaters(time);
+
+        if (renderer.xr.isPresenting && frame) {
+          if (!referenceSpace) {
+            referenceSpace = renderer.xr.getReferenceSpace();
+          }
+          const session = renderer.xr.getSession();
+          if (!hitTestSourceRequested && session) {
+            session.requestReferenceSpace("viewer").then((space) => {
+              session
+                .requestHitTestSource({ space })
+                .then((source) => {
+                  hitTestSource = source;
+                })
+                .catch(() => setNote("Unable to start AR hit-test."));
+            });
+            session.addEventListener("end", () => {
+              hitTestSourceRequested = false;
+              hitTestSource = null;
+            });
+            hitTestSourceRequested = true;
+          }
+
+          if (hitTestSource && referenceSpace && !placed) {
+            const hitTestResults = frame.getHitTestResults(hitTestSource);
+            if (hitTestResults.length) {
+              const hit = hitTestResults[0];
+              const pose = hit.getPose(referenceSpace);
+              reticle.visible = true;
+              reticle.matrix.fromArray(pose.transform.matrix);
+            } else {
+              reticle.visible = false;
+            }
+          } else if (placed) {
+            reticle.visible = false;
+          }
+        } else {
+          controls.update();
+        }
+
+        renderer.render(scene, camera);
+      });
+
+      if (exitButton) {
+        exitButton.addEventListener("click", async () => {
+          const session = renderer.xr.getSession();
+          if (session) {
+            try {
+              await session.end();
+            } catch (err) {
+              console.warn("Failed to end AR session", err);
+            }
+          }
+          window.location.assign(window.location.pathname + window.location.search);
+        });
+      }
+    </script>
+  </body>
+</html>

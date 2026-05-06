@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NutriXR Yoga AR</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js",
+          "three/examples/jsm/webxr/ARButton.js": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/webxr/ARButton.js",
+          "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/OrbitControls.js"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 30% 20%, #0f172a, #0b1220 40%, #070c17 80%);
+        color: #e5e7eb;
+        display: flex;
+        flex-direction: column;
+      }
+      body.ar-active {
+        background: transparent;
+      }
+      body.ar-active .start-panel,
+      body.ar-active #ar-button,
+      body.ar-active .ar-back {
+        display: none;
+      }
+      main {
+        flex: 1;
+        padding: 18px 16px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .start-panel {
+        margin: 8px auto 0;
+        max-width: 520px;
+        width: 100%;
+        background: rgba(15, 23, 42, 0.88);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 18px;
+        padding: 16px 16px 18px;
+        display: grid;
+        gap: 10px;
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+      }
+      .start-title {
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .start-sub {
+        color: #cbd5f5;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .start-status {
+        font-size: 12px;
+        color: #fca5a5;
+        min-height: 16px;
+      }
+      #ar-button {
+        display: flex;
+        justify-content: center;
+      }
+      #ar-button button {
+        font-size: 16px;
+        padding: 12px 20px;
+        border-radius: 14px;
+        border: none;
+        background: linear-gradient(120deg, #38bdf8, #22c55e);
+        color: #0b1220;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(56, 189, 248, 0.35);
+      }
+      .ar-back {
+        align-self: flex-start;
+        color: #e2e8f0;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        margin-bottom: 6px;
+      }
+      .stage {
+        flex: 1;
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(15, 23, 42, 0.7);
+      }
+      body.ar-active .stage {
+        background: transparent;
+      }
+      .controls {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.86);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      .controls.hidden {
+        display: none;
+      }
+      .controls-title {
+        font-weight: 800;
+        font-size: 16px;
+      }
+      .controls-meta {
+        font-size: 12px;
+        color: #cbd5f5;
+      }
+      .controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .btn {
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+      }
+      .btn-primary {
+        background: #22c55e;
+        color: #0b1220;
+      }
+      .btn-secondary {
+        background: rgba(148, 163, 184, 0.2);
+        color: #e2e8f0;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: #e2e8f0;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      .status-note {
+        font-size: 12px;
+        color: #fca5a5;
+        min-height: 16px;
+      }
+      body.ar-active .controls {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 20;
+      }
+      @media (min-width: 900px) {
+        body.ar-active .controls {
+          left: auto;
+          right: 16px;
+          width: 360px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="ar-back" href="/yoga">Back</a>
+      <div class="start-panel">
+        <div class="start-title">Ready to enter Yoga AR?</div>
+        <div class="start-sub">Allow camera access to place the yoga clip panel.</div>
+        <div class="start-status" id="start-status"></div>
+        <div id="ar-button"></div>
+      </div>
+      <div class="stage" id="stage"></div>
+      <section class="controls hidden" id="controls-panel">
+        <div class="controls-title" id="clip-title">Yoga clip</div>
+        <div class="controls-meta" id="clip-meta"></div>
+        <div class="controls-row">
+          <button class="btn btn-primary" id="btn-play" type="button">Play</button>
+          <button class="btn btn-secondary" id="btn-mute" type="button">Mute</button>
+          <button class="btn btn-secondary" id="btn-move" type="button">Move</button>
+          <button class="btn btn-secondary" id="btn-next" type="button">Next</button>
+          <button class="btn btn-ghost" id="btn-exit" type="button">Exit</button>
+        </div>
+        <div class="status-note" id="status-note"></div>
+      </section>
+    </main>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
+      import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+      const stageEl = document.getElementById("stage");
+      const arButtonSlot = document.getElementById("ar-button");
+      const startStatusEl = document.getElementById("start-status");
+      const statusNoteEl = document.getElementById("status-note");
+      const clipTitleEl = document.getElementById("clip-title");
+      const clipMetaEl = document.getElementById("clip-meta");
+      const controlsPanel = document.getElementById("controls-panel");
+      const playBtn = document.getElementById("btn-play");
+      const muteBtn = document.getElementById("btn-mute");
+      const moveBtn = document.getElementById("btn-move");
+      const nextBtn = document.getElementById("btn-next");
+      const exitBtn = document.getElementById("btn-exit");
+
+      const setStartStatus = (text) => {
+        if (startStatusEl) startStatusEl.textContent = text || "";
+      };
+      const setStatusNote = (text) => {
+        if (statusNoteEl) statusNoteEl.textContent = text || "";
+      };
+
+      function getPayload() {
+        try {
+          const raw = sessionStorage.getItem("nutrixr-yoga-payload");
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      const payload = getPayload();
+      const clips = Array.isArray(payload?.clips) ? payload.clips : [];
+      let currentIndex = Number.isFinite(payload?.index) ? payload.index : 0;
+
+      if (!clips.length) {
+        setStartStatus("No yoga clips found. Go back and select a clip.");
+      }
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+      renderer.setSize(stageEl.clientWidth, stageEl.clientHeight);
+      renderer.xr.enabled = true;
+      renderer.setClearColor(0x000000, 0);
+      renderer.domElement.style.touchAction = "none";
+      stageEl.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        70,
+        stageEl.clientWidth / stageEl.clientHeight,
+        0.01,
+        20
+      );
+      camera.position.set(0, 1.4, 3);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1, 0);
+      controls.enableDamping = true;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x4b5563, 0.9));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+      dirLight.position.set(2, 4, 1.5);
+      scene.add(dirLight);
+
+      const reticleGeo = new THREE.RingGeometry(0.08, 0.12, 32);
+      reticleGeo.rotateX(-Math.PI / 2);
+      const reticleMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const reticle = new THREE.Mesh(reticleGeo, reticleMat);
+      reticle.matrixAutoUpdate = false;
+      reticle.visible = false;
+      scene.add(reticle);
+
+      const video = document.createElement("video");
+      video.playsInline = true;
+      video.preload = "auto";
+      video.crossOrigin = "anonymous";
+
+      const videoTexture = new THREE.VideoTexture(video);
+      videoTexture.colorSpace = THREE.SRGBColorSpace;
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+
+      const planeMaterial = new THREE.MeshBasicMaterial({
+        map: videoTexture,
+        side: THREE.DoubleSide
+      });
+      let planeGeometry = new THREE.PlaneGeometry(1.2, 0.7);
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.visible = false;
+      scene.add(plane);
+
+      let placed = false;
+      let moveMode = false;
+      let hitTestSource = null;
+      let hitTestSourceRequested = false;
+      let referenceSpace = null;
+      const activePointers = new Map();
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      let pinchBaseDistance = null;
+      let pinchStartScale = 1;
+
+      const controller = renderer.xr.getController(0);
+      controller.addEventListener("select", () => {
+        if (!renderer.xr.isPresenting) return;
+        if (!placed) {
+          placePlane();
+        } else if (moveMode) {
+          movePlaneToReticle();
+        }
+      });
+      scene.add(controller);
+
+      const arButton = ARButton.createButton(renderer, {
+        requiredFeatures: ["hit-test"],
+        optionalFeatures: ["dom-overlay"],
+        domOverlay: { root: document.body }
+      });
+      arButtonSlot.innerHTML = "";
+      arButtonSlot.appendChild(arButton);
+
+      const markUnsupported = (reason) => {
+        setStartStatus(reason);
+        if (arButton) {
+          arButton.textContent = reason;
+          arButton.disabled = true;
+        }
+      };
+
+      async function ensureSupport() {
+        if (!navigator.xr) {
+          markUnsupported("AR is not supported on this browser.");
+          return false;
+        }
+        try {
+          const supported = await navigator.xr.isSessionSupported("immersive-ar");
+          if (!supported) {
+            markUnsupported("AR is not supported on this device.");
+            return false;
+          }
+          return true;
+        } catch (err) {
+          return true;
+        }
+      }
+
+      ensureSupport();
+
+      renderer.xr.addEventListener("sessionstart", () => {
+        document.body.classList.add("ar-active");
+        if (controlsPanel) controlsPanel.classList.remove("hidden");
+        setStatusNote("Move your phone to find a surface, then tap to place.");
+      });
+
+      renderer.xr.addEventListener("sessionend", () => {
+        document.body.classList.remove("ar-active");
+        if (controlsPanel) controlsPanel.classList.add("hidden");
+        placed = false;
+        moveMode = false;
+        reticle.visible = false;
+        plane.visible = false;
+        if (moveBtn) moveBtn.textContent = "Move";
+      });
+
+      const handleStartClick = () => {
+        setTimeout(() => {
+          if (!renderer.xr.isPresenting) {
+            const message = "AR session failed to start. Returning to video mode.";
+            sessionStorage.setItem("nutrixr-yoga-ar-error", message);
+            window.location.assign("/yoga");
+          }
+        }, 2000);
+      };
+
+      arButton.addEventListener("click", handleStartClick);
+
+      const loadClip = (index) => {
+        if (!clips.length) return;
+        if (index < 0) index = 0;
+        currentIndex = index % clips.length;
+        const clip = clips[currentIndex];
+        if (!clip) return;
+
+        clipTitleEl.textContent = clip.title || "Yoga clip";
+        clipMetaEl.textContent = `Goal: ${clip.goal} | Duration: ${clip.duration} | Level: ${clip.level}`;
+
+        video.pause();
+        video.src = clip.videoSrc;
+        video.load();
+        playBtn.textContent = "Play";
+        setStatusNote("Tap Play to start the video.");
+      };
+
+      const updatePlaneForVideo = () => {
+        if (!video.videoWidth || !video.videoHeight) return;
+        const aspect = video.videoWidth / video.videoHeight;
+        const width = 1.2;
+        const height = width / aspect;
+        planeGeometry.dispose();
+        planeGeometry = new THREE.PlaneGeometry(width, height);
+        plane.geometry = planeGeometry;
+      };
+
+      video.addEventListener("loadedmetadata", updatePlaneForVideo);
+
+      const placePlane = () => {
+        if (reticle.visible) {
+          plane.position.setFromMatrixPosition(reticle.matrix);
+        } else {
+          plane.position.set(0, 1, -1.2);
+        }
+        plane.visible = true;
+        placed = true;
+        moveMode = false;
+        reticle.visible = false;
+        if (moveBtn) moveBtn.textContent = "Move";
+        setStatusNote("Tap Play to start the video.");
+      };
+
+      const movePlaneToReticle = () => {
+        if (!reticle.visible) {
+          setStatusNote("Move your phone to find a surface.");
+          return;
+        }
+        plane.position.setFromMatrixPosition(reticle.matrix);
+        moveMode = false;
+        reticle.visible = false;
+        if (moveBtn) moveBtn.textContent = "Move";
+        setStatusNote("Position updated.");
+      };
+
+      renderer.domElement.addEventListener("pointerdown", () => {
+        if (!renderer.xr.isPresenting) return;
+        if (!placed) {
+          placePlane();
+        } else if (moveMode) {
+          movePlaneToReticle();
+        }
+      });
+      renderer.domElement.addEventListener("pointerdown", (event) => {
+        if (!renderer.xr.isPresenting || !placed) return;
+        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (activePointers.size === 1) {
+          isDragging = true;
+          lastX = event.clientX;
+          lastY = event.clientY;
+        } else if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          pinchBaseDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          pinchStartScale = plane.scale.x || 1;
+        }
+      });
+      renderer.domElement.addEventListener("pointerup", (event) => {
+        activePointers.delete(event.pointerId);
+        isDragging = false;
+        pinchBaseDistance = null;
+      });
+      renderer.domElement.addEventListener("pointercancel", (event) => {
+        activePointers.delete(event.pointerId);
+        isDragging = false;
+        pinchBaseDistance = null;
+      });
+      renderer.domElement.addEventListener("pointermove", (event) => {
+        if (!renderer.xr.isPresenting || !placed) return;
+        if (activePointers.has(event.pointerId)) {
+          activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+        if (activePointers.size === 1 && isDragging) {
+          const dx = event.clientX - lastX;
+          const dy = event.clientY - lastY;
+          lastX = event.clientX;
+          lastY = event.clientY;
+          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          right.y = 0;
+          forward.y = 0;
+          right.normalize();
+          forward.normalize();
+          const moveScale = 0.0025;
+          plane.position.addScaledVector(right, dx * moveScale);
+          plane.position.addScaledVector(forward, dy * moveScale);
+        } else if (activePointers.size === 2) {
+          const pts = Array.from(activePointers.values());
+          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          if (pinchBaseDistance && dist > 0) {
+            const factor = dist / pinchBaseDistance;
+            const nextScale = THREE.MathUtils.clamp(pinchStartScale * factor, 0.35, 2.5);
+            plane.scale.setScalar(nextScale);
+          }
+        }
+      });
+
+      playBtn.addEventListener("click", async () => {
+        if (video.paused) {
+          try {
+            await video.play();
+            playBtn.textContent = "Pause";
+            setStatusNote("");
+          } catch (err) {
+            setStatusNote("Video did not start. Tap Play again.");
+          }
+        } else {
+          video.pause();
+          playBtn.textContent = "Play";
+        }
+      });
+
+      muteBtn.addEventListener("click", () => {
+        video.muted = !video.muted;
+        muteBtn.textContent = video.muted ? "Unmute" : "Mute";
+      });
+
+      moveBtn.addEventListener("click", () => {
+        if (!placed) {
+          setStatusNote("Tap a surface to place the video first.");
+          return;
+        }
+        moveMode = !moveMode;
+        moveBtn.textContent = moveMode ? "Tap to place" : "Move";
+        setStatusNote(
+          moveMode
+            ? "Tap a surface to move the video panel."
+            : "Move mode off."
+        );
+      });
+
+      nextBtn.addEventListener("click", () => {
+        if (!clips.length) return;
+        loadClip(currentIndex + 1);
+      });
+
+      exitBtn.addEventListener("click", async () => {
+        const session = renderer.xr.getSession();
+        if (session) {
+          try {
+            await session.end();
+          } catch (err) {
+            // ignore
+          }
+        }
+        window.location.assign("/yoga");
+      });
+
+      loadClip(currentIndex);
+
+      const tempVec = new THREE.Vector3();
+
+      renderer.setAnimationLoop((timestamp, frame) => {
+        if (renderer.xr.isPresenting && frame) {
+          if (!referenceSpace) {
+            referenceSpace = renderer.xr.getReferenceSpace();
+          }
+          const session = renderer.xr.getSession();
+          if (!hitTestSourceRequested && session) {
+            session.requestReferenceSpace("viewer").then((space) => {
+              session
+                .requestHitTestSource({ space })
+                .then((source) => {
+                  hitTestSource = source;
+                })
+                .catch(() => setStatusNote("Unable to start AR hit-test."));
+            });
+            session.addEventListener("end", () => {
+              hitTestSourceRequested = false;
+              hitTestSource = null;
+            });
+            hitTestSourceRequested = true;
+          }
+
+          if (hitTestSource && referenceSpace && (!placed || moveMode)) {
+            const hitTestResults = frame.getHitTestResults(hitTestSource);
+            if (hitTestResults.length) {
+              const hit = hitTestResults[0];
+              const pose = hit.getPose(referenceSpace);
+              reticle.visible = true;
+              reticle.matrix.fromArray(pose.transform.matrix);
+            } else {
+              reticle.visible = false;
+            }
+          } else if (placed) {
+            reticle.visible = false;
+          }
+        } else {
+          controls.update();
+        }
+
+        if (placed) {
+          camera.getWorldPosition(tempVec);
+          tempVec.y = plane.position.y;
+          plane.lookAt(tempVec);
+        }
+
+        renderer.render(scene, camera);
+      });
+
+      window.addEventListener("resize", () => {
+        const width = stageEl.clientWidth;
+        const height = stageEl.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      });
+    </script>
+  </body>
+</html>

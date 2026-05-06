@@ -1,0 +1,65 @@
+.desktop-viewer {
+  min-height: 100vh;
+  background: radial-gradient(circle at 30% 20%, #0f172a, #0b1220 40%, #070c17 80%);
+  color: #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop-viewer__nav {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desktop-viewer__title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.desktop-viewer__panel {
+  flex: 1;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desktop-viewer__scene {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 20px;
+  padding: 18px;
+  width: min(1200px, 92vw);
+  height: min(78vh, 720px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+.desktop-viewer__scene canvas {
+  border-radius: 16px;
+}
+
+.desktop-viewer__empty {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 16px;
+  padding: 18px;
+  color: #cbd5f5;
+}
+
+.desktop-viewer__loading {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5f5;
+  font-size: 13px;
+  text-align: center;
+}

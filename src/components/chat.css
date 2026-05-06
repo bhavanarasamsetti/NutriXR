@@ -1,0 +1,380 @@
+/* =========================================
+   DIETITIAN CHAT — BASE
+========================================= */
+
+.chat-drawer {
+  background: #ffffff;
+  color: #111827;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-page {
+  background: #ffffff;
+  color: #111827;
+
+  width: 100%;
+  height: calc(100dvh - 64px); /* below navbar */
+
+  border-radius: 0;          /* 🔥 VERY IMPORTANT */
+  box-shadow: none;          /* 🔥 VERY IMPORTANT */
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===============================
+   CHAT PAGE BACK BUTTON
+================================ */
+
+.chat-back {
+  all: unset;                 /* remove default button styles */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  cursor: pointer;
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 600;
+
+  padding: 6px 10px;
+}
+
+.chat-back:hover {
+  opacity: 0.85;              /* subtle hover */
+}
+
+/* Arrow style */
+.back-arrow {
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+/* Text style */
+.back-text {
+  font-size: 15px;   /* smaller text */
+  font-weight: 500;  /* slightly lighter */
+}
+
+
+
+
+/* =========================================
+   FLOATING BOT (FAB)
+========================================= */
+
+.chat-launcher-fixed {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 200;
+  cursor: pointer;
+}
+
+.girl-orb {
+  width: 120px;          /* ⬅️ bigger */
+  height: 120px;         /* ⬅️ bigger */
+  border-radius: 50%;
+
+  background: radial-gradient(circle at 30% 30%, #c4b5fd, #8b5cf6);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow:
+    0 14px 35px rgba(139, 92, 246, 0.45),   /* stronger shadow */
+    inset 0 0 0 4px rgba(255,255,255,0.3);
+
+  overflow: hidden;
+}
+
+
+/* =========================================
+   CHAT DRAWER MODE
+========================================= */
+
+.chat-drawer {
+  position: fixed;
+  right: 24px;
+  bottom: 150px;
+  width: 320px;
+  height: 520px;
+  max-height: 520px;
+  background: #ffffff;
+  border-radius: 32px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+  margin-bottom: 8px;
+}
+
+
+.chat-drawer.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* =========================================
+   CHAT PAGE MODE
+========================================= */
+
+.chat-page {
+  width: 100%;
+  height: calc(100vh - 80px);
+ 
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.chat-header {
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #5aa145, #6fb24f);
+  color: white;
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.chat-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Curved header ONLY for floating chat */
+.chat-drawer .chat-header {
+  border-radius: 32px 32px 0 0;
+}
+
+/* =========================================
+   BODY
+========================================= */
+
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: nowrap;        /* 🚫 NO WRAPPING */
+  gap: 12px;
+
+  overflow-x: auto;         /* ✅ horizontal scroll */
+  overflow-y: hidden;
+
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+
+
+
+
+/* =========================================
+   MESSAGES
+========================================= */
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height:0;
+  padding-right: 4px;
+}
+
+.chat-message {
+  max-width: 85%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.chat-message.user {
+  background: #e6f4ea;
+  color: #064e3b;
+  align-self: flex-end;
+}
+
+.chat-message.assistant {
+  background: #f4f6f8;
+  color: #1f2937;
+}
+
+/* =========================================
+   INPUT
+========================================= */
+
+.chat-input-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chat-input-row input {
+  flex: 1;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.send-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.chat-disclaimer {
+  font-size: 12px;
+  color: #9ca3af;
+  padding: 8px 16px 12px;
+}
+
+/* =========================================
+   CHAT SCROLLBAR
+========================================= */
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+  min-height: 0; /* 🔥 REQUIRED */
+}
+
+/* Scrollbar */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(22, 163, 74, 0.45);
+  border-radius: 4px;
+}
+
+/* =========================================
+   HORIZONTAL SCROLLING SUGGESTIONS BAR
+========================================= */
+
+.chat-suggestions-wrapper {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+
+
+
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide vertical overflow completely */
+.chat-suggestions::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chat-suggestions::-webkit-scrollbar-track {
+   background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.chat-suggestions::-webkit-scrollbar-thumb {
+  background: #bdbdbd;
+  border-radius: 999px;
+}
+.chat-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+/* ===============================
+   CHAT SUGGESTION CHIPS (FINAL)
+================================ */
+
+.chat-chip {
+  appearance: none;
+  -webkit-appearance: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 16px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background-color: var(--bg);
+  color: var(--fg);
+
+  cursor: pointer;
+  flex-shrink: 0;
+   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 🔒 LOCK ALL STATES */
+.chat-chip:hover,
+.chat-chip:active,
+.chat-chip:focus,
+.chat-chip:focus-visible {
+  background-color: var(--bg);
+  color: var(--fg);
+  outline: none;
+  box-shadow: none;
+}
+
+/* COLORS */
+.chip-compare   { --bg:#e0ebff; --fg:#3b73e9; }
+.chip-health    { --bg:#ffe4e6; --fg:#dc2626; }
+.chip-recipe    { --bg:#dcfce7; --fg:#15803d; }
+.chip-nutrition { --bg:#fef3c7; --fg:#b45309; }
+.chip-diet      { --bg:#ede9fe; --fg:#7c3aed; }
+.chip-fiber     { --bg:#d1fae5; --fg:#047857; }
+
+/* ✨ Subtle hover effect – SAME color */
+.chat-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
