@@ -1,70 +1,211 @@
-NutriXR
-======
+# NutriXR
 
-NutriXR is a full stack application with:
-1. Backend: Node.js chat server running on port 3001
-2. Frontend: Vite app running on port 5173
+## Product Vision
 
-You can run it with a hosted LLM (Groq or OpenAI), a local LLM (Ollama), or in demo mode without any LLM.
+NutriXR is an AI-powered wellness and nutrition platform designed to make healthy living more interactive, personalized, and engaging through intelligent food analysis, immersive AR experiences, and guided wellness support.
 
-Prerequisites
--------------
+The platform combines AI-assisted nutrition guidance, fruit recognition, augmented reality visualization, recipe recommendations, and wellness experiences into a unified digital product focused on improving user engagement and accessibility in health and nutrition.
 
-- Node.js 18 or newer
+---
+
+## Problem
+
+Traditional nutrition and wellness applications often provide static information with limited personalization and low user engagement.
+
+Users frequently struggle to:
+- Understand nutritional information visually
+- Compare healthy food choices interactively
+- Access personalized wellness recommendations
+- Stay engaged with conventional health applications
+
+NutriXR addresses these challenges by integrating AI-powered assistance, immersive visualization, and interactive wellness experiences into a single platform.
+
+---
+
+## Key Features
+
+- AI-powered dietitian chat assistant with optional LLM integration
+- Fruit recognition and nutrition analysis
+- Interactive AR-based food visualization using WebXR
+- Personalized recipe recommendations
+- Nutrition dashboards and nutrient insights
+- Yoga and wellness guidance hub
+- User authentication and profile management
+- Responsive user experience across devices
+
+---
+
+## Technology Stack
+
+### Frontend
+- React
+- Vite
+- JavaScript
+- CSS
+
+### Backend
+- Node.js
+- Express.js
+
+### AI & AR
+- Groq / OpenAI / Ollama (optional)
+- TensorFlow
+- Teachable Machine
+- A-Frame
+- WebXR
+
+### State Management
+- React Context API
+
+---
+
+## System Architecture
+
+NutriXR follows a modular full-stack architecture consisting of:
+- Frontend user interface layer
+- Backend API and chat server
+- AI-assisted nutrition workflows
+- AR visualization components
+- Nutrition and wellness data modules
+
+The system is designed to support scalable wellness interactions while enabling modular AI integrations and immersive user experiences.
+
+---
+
+## AI Configuration
+
+The application supports optional LLM integration using:
+- Groq
+- OpenAI
+- Ollama
+
+For portfolio and demo purposes, the platform can also run entirely in local demo mode without external API configuration.
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+- Node.js 18+
 - npm
 
-Install
--------
+---
+
+### Install Dependencies
 
 ```bash
-npm install
-Environment
+npm install --legacy-peer-deps
+```
 
-Create a .env file in the project root (same folder as package.json).
-This file is git ignored, so do not commit it.
+---
 
-Choose only one configuration below. If you mix multiple providers, behavior can be confusing.
+### Environment Variables
 
-Option 1: Groq (hosted)
-DIETITIAN_LLM_PROVIDER=groq
-GROQ_API_KEY=your_groq_key
-GROQ_MODEL=llama-3.1-8b-instant
-DIETITIAN_REQUIRE_LLM=true
-Option 2: Ollama (local)
+Create a `.env` file in the project root:
 
-Start Ollama locally first (default URL is below).
-
-Then set:
-
-DIETITIAN_LLM_PROVIDER=ollama
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3.2:1b
-DIETITIAN_REQUIRE_LLM=true
-Option 3: OpenAI (hosted)
-DIETITIAN_LLM_PROVIDER=openai
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-4o-mini
-DIETITIAN_REQUIRE_LLM=true
-Option 4: Demo mode (no LLM)
+```env
 DIETITIAN_DEMO_MODE=true
-Run
+```
 
-Open two terminals.
+---
 
-Terminal 1: backend (chat server on :3001)
+### Run Backend Server
 
+```bash
 npm run server
+```
 
-Terminal 2: frontend (Vite on :5173)
+---
 
+### Run Frontend
+
+```bash
 npm run dev
+```
 
-Open the URL shown by Vite, usually:
+---
+
+### Open Application
+
+```bash
 http://localhost:5173
+```
 
-Notes
+---
 
-.env is git ignored. Do not commit secrets.
+## Screenshots
 
-If you want to share configuration with your team, create a .env.example with placeholder values only.
-If ports are busy, close the process using them or update your project port config.
+### Dashboard Experience
+![Dashboard](screenshots/dashboard.png)
+
+### AR Food Visualization
+![AR Experience](screenshots/ar.png)
+
+### AI Dietitian Assistant
+![Dietitian Chat](screenshots/chat.png)
+
+### Fruit Recognition Workflow
+![Fruit Scanner](screenshots/scanner.png)
+
+---
+
+## Project Contribution
+
+Contributed to product design, AI-assisted nutrition workflows, system architecture, interactive user experience design, and wellness feature integration as part of a university team project at TU Chemnitz.
+
+Key contribution areas included:
+- Product and feature ideation
+- AI-assisted wellness interaction concepts
+- User workflow and system interaction design
+- Dashboard and experience integration
+- Architecture and functionality planning
+
+---
+
+## Achievement
+
+Top 3 finalist project in university evaluation.
+
+---
+
+## Repository Structure
+
+```plaintext
+NutriXR/
+├── public/
+├── scripts/
+├── server/
+├── src/
+├── README.md
+├── package.json
+├── vite.config.js
+└── .gitignore
+```
+
+---
+
+## Security Notes
+
+- API keys and sensitive credentials are not included in this repository.
+- `.env` files are excluded from version control.
+- Demo mode is enabled for safe local execution.
+
+---
+
+## Future Improvements
+
+- Advanced AI nutrition recommendation engine
+- User behavior analytics and personalization
+- Expanded AR wellness experiences
+- Wearable and fitness tracker integration
+- Multi-language wellness support
+
+---
+
+## Author
+
+**Bhavana Rasamsetti**  
+Web Engineering – TU Chemnitz
+
+---
