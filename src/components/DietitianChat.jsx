@@ -215,7 +215,7 @@ try {
   <div className="chat-launcher-fixed" onClick={() => setIsOpen(prev => !prev)}>
     <div className="girl-orb">
       <model-viewer
-       src="/models/punk-girl.glb"
+       src="/models/girl-model.glb"
         auto-rotate
         rotation-per-second="8deg"
         camera-controls={false}
