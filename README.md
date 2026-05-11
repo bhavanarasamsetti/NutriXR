@@ -139,15 +139,19 @@ http://localhost:5173
 ### Dashboard Experience
 ![Dashboard](screenshots/dashboard.png)
 
-### AR Food Visualization
-![AR Experience](screenshots/ar.png)
-
 ### AI Dietitian Assistant
-![Dietitian Chat](screenshots/chat.png)
+![Dietitian Chat](screenshots/chatbot.png)
 
-### Fruit Recognition Workflow
+### AI Fruit Recognition
 ![Fruit Scanner](screenshots/scanner.png)
 
+### Nutrition Intelligence Graph
+![Semantic Intelligence](screenshots/semantic.png)
+
+### Personalized Recipe Experience
+![Recipe](screenshots/recipe.png)
+
+> Note: Some AR/WebXR experiences are optimized for supported mobile devices and browsers.
 ---
 
 ## Project Contribution
