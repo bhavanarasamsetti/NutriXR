@@ -212,24 +212,34 @@ try {
     <>
  
 {mode === "drawer" && !isScannerPage && (
-  <div className="chat-launcher-fixed" onClick={() => setIsOpen(prev => !prev)}>
-    <div className="girl-orb">
+  <div
+    className="chat-launcher-fixed"
+    onClick={() => setIsOpen(prev => !prev)}
+  >
+    <div
+      className="girl-orb"
+      style={{
+        width: "180px",
+        height: "180px",
+        overflow: "visible"
+      }}
+    >
       <model-viewer
-  src="/models/girl.glb"
-  auto-rotate
-  camera-controls
-  disable-zoom
-  interaction-prompt="none"
-  camera-orbit="0deg 75deg 2.2m"
-  field-of-view="35deg"
-  exposure="1.3"
-  style={{
-    width: "100%",
-    height: "100%",
-    background: "transparent",
-    pointerEvents: "none"
-  }}
-></model-viewer>
+        src="/models/girl.glb"
+        auto-rotate
+        camera-controls
+        disable-zoom
+        interaction-prompt="none"
+        camera-orbit="0deg 75deg 1.6m"
+        field-of-view="35deg"
+        exposure="1.3"
+        shadow-intensity="1"
+        style={{
+          width: "220px",
+          height: "220px",
+          background: "transparent"
+        }}
+      ></model-viewer>
     </div>
   </div>
 )}
