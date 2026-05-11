@@ -215,32 +215,28 @@ try {
   <div
     className="chat-launcher-fixed"
     onClick={() => setIsOpen(prev => !prev)}
+    style={{
+      width: "70px",
+      height: "70px",
+      borderRadius: "50%",
+      background: "#ffffff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+      cursor: "pointer"
+    }}
   >
-    <div
-      className="girl-orb"
+    <img
+      src="/icons/mic.png"
+      alt="AI Assistant"
       style={{
-        width: "180px",
-        height: "180px",
-        overflow: "visible"
+        width: "36px",
+        height: "36px"
       }}
-    >
-      <model-viewer
-        src="/models/girl.glb"
-        auto-rotate
-        interaction-prompt="none"
-        camera-orbit="0deg 75deg 1.6m"
-        field-of-view="35deg"
-        exposure="1.3"
-        style={{
-          width: "220px",
-          height: "220px",
-          background: "transparent"
-        }}
-      />
-    </div>
+    />
   </div>
 )}
-
 
 
 
