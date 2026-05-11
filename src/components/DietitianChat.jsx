@@ -227,23 +227,19 @@ try {
       <model-viewer
         src="/models/girl.glb"
         auto-rotate
-        camera-controls
-        disable-zoom
         interaction-prompt="none"
         camera-orbit="0deg 75deg 1.6m"
         field-of-view="35deg"
         exposure="1.3"
-        shadow-intensity="1"
         style={{
           width: "220px",
           height: "220px",
           background: "transparent"
         }}
-      ></model-viewer>
+      />
     </div>
   </div>
 )}
-
 
 
 
