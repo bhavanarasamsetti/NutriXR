@@ -1,5 +1,9 @@
 # NutriXR
 
+## Live Demo
+
+🔗 https://nutri-xr.vercel.app/
+
 ## Product Vision
 
 NutriXR is an AI-powered wellness and nutrition platform designed to make healthy living more interactive, personalized, and engaging through intelligent food analysis, immersive AR experiences, and guided wellness support.
@@ -178,13 +182,15 @@ Top 3 finalist project in university evaluation.
 ```plaintext
 NutriXR/
 ├── public/
+│   └── models/
 ├── scripts/
 ├── server/
 ├── src/
+├── index.html        
+├── vercel.json       
 ├── README.md
 ├── package.json
-├── vite.config.js
-└── .gitignore
+└── vite.config.js
 ```
 
 ---
@@ -194,6 +200,16 @@ NutriXR/
 - API keys and sensitive credentials are not included in this repository.
 - `.env` files are excluded from version control.
 - Demo mode is enabled for safe local execution.
+
+---
+
+---
+
+## Known Limitations
+
+- The AI dietitian runs in demo mode on the live deployment (no API key required)
+- AR/WebXR features require a supported mobile browser (Chrome on Android recommended)
+- Backend AI features (Groq/OpenAI) require local setup with your own API keys
 
 ---
 
@@ -209,7 +225,7 @@ NutriXR/
 
 ## Author
 
-**Bhavana Rasamsetti**  
-Web Engineering – TU Chemnitz
+**Bhavana Rasamsetti  
+Aspiring AI Product Manager | Data Analytics | Web Engineering – TU Chemnitz
 
 ---
