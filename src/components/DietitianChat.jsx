@@ -217,8 +217,12 @@ try {
       <model-viewer
   src="/models/girl.glb"
   auto-rotate
-  rotation-per-second="8deg"
+  camera-controls
+  disable-zoom
   interaction-prompt="none"
+  camera-orbit="0deg 75deg 2.2m"
+  field-of-view="35deg"
+  exposure="1.3"
   style={{
     width: "100%",
     height: "100%",
