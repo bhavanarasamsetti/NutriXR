@@ -14,6 +14,7 @@
     "import-images:inline": "node ./scripts/import-images-inline.js"
   },
   "dependencies": {
+    "@google/model-viewer": "^4.2.0",
     "@react-three/drei": "9.114.3",
     "@react-three/fiber": "8.17.12",
     "@react-three/xr": "^6.4.3",
