@@ -215,18 +215,15 @@ try {
   <div className="chat-launcher-fixed" onClick={() => setIsOpen(prev => !prev)}>
     <div className="girl-orb">
       <model-viewer
-  src="/models/girl-model.glb"
+  src="/models/girl.glb"
   auto-rotate
   rotation-per-second="8deg"
-  camera-controls
-  disable-zoom
   interaction-prompt="none"
-  exposure="1.3"
-  tone-mapping="neutral"
   style={{
     width: "100%",
     height: "100%",
-    background: "transparent"
+    background: "transparent",
+    pointerEvents: "none"
   }}
 ></model-viewer>
     </div>
